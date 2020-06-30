@@ -75,7 +75,7 @@ RNN_CLASSES = [SimpleRNN, GRU, LSTM]
 def _asarray(*a):
     return np.array([a], dtype='f')
 
-
+"""
 def test_keras_lambda(runner):
     model = Sequential()
     model.add(Lambda(lambda x: x ** 2, input_shape=[3, 5]))
@@ -2508,3 +2508,22 @@ def test_reverseV2(runner):
     data = np.random.rand(1, 2, 4).astype(np.float32)
     expected = model.predict(data)
     assert runner('tf_rev_v2', onnx_model, data, expected)
+"""
+
+@pytest.mark.skipif((is_tensorflow_older_than('1.14.0') or (not is_tf_keras)), reason='old tf version')
+def test_tensor_scatter_update(runner):
+    input = Input(shape=(4, 4), name='input')
+    indices = keras.Input(shape=(2,1), name='indices', dtype=np.int32)
+    updates = keras.Input(shape=(2,4,4), name='updates')
+    tensor_scatter_update = tf.tensor_scatter_nd_update(input, indices, updates)
+    model = tf.keras.models.Model(inputs=[input, indices, updates], outputs=tensor_scatter_update)
+
+    indices_value = np.array([[0], [2]], dtype=np.int32)
+    updates_vluae = np.array([[[5, 5, 5, 5], [6, 6, 6, 6],
+                         [7, 7, 7, 7], [8, 8, 8, 8]],
+                        [[5, 5, 5, 5], [6, 6, 6, 6],
+                         [7, 7, 7, 7], [8, 8, 8, 8]]])
+    onnx_model = keras2onnx.convert_keras(model, 'tf_tensor_scatter_update')
+    #data = np.random.rand(4, 4, 4).astype(np.float32)
+    #expected = tf.tensor_scatter_nd_update(data, indices, updates)
+    #assert runner('tf_tensor_scatter_update', onnx_model, {"input": data, "indices": indices_value, "updates": updates_value}, expected)
